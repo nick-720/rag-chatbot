@@ -79,3 +79,4 @@ Key settings in `backend/config.py`:
 - `MAX_HISTORY`: 2 (conversation exchanges kept)
 
 Requires `ANTHROPIC_API_KEY` in `.env` file.
+
