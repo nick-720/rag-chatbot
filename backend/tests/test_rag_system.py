@@ -1,6 +1,7 @@
 """
 Tests for RAGSystem - query orchestration and session management.
 """
+
 import pytest
 from unittest.mock import Mock, patch, MagicMock
 from rag_system import RAGSystem
@@ -13,10 +14,12 @@ class TestRAGSystemQuery:
     @pytest.fixture
     def rag_system(self, mock_config):
         """RAGSystem with all dependencies mocked"""
-        with patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.VectorStore') as mock_vs_class, \
-             patch('rag_system.AIGenerator') as mock_ai_class, \
-             patch('rag_system.SessionManager') as mock_sm_class:
+        with (
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.VectorStore") as mock_vs_class,
+            patch("rag_system.AIGenerator") as mock_ai_class,
+            patch("rag_system.SessionManager") as mock_sm_class,
+        ):
 
             # Setup mock instances
             mock_vector_store = Mock()
@@ -66,9 +69,9 @@ class TestRAGSystemQuery:
         rag_system.query("Search question")
 
         call_args = rag_system._mock_ai.generate_response.call_args
-        assert 'tools' in call_args.kwargs
-        assert call_args.kwargs['tools'] is not None
-        assert len(call_args.kwargs['tools']) == 2  # search + outline tools
+        assert "tools" in call_args.kwargs
+        assert call_args.kwargs["tools"] is not None
+        assert len(call_args.kwargs["tools"]) == 2  # search + outline tools
 
     def test_query_passes_tool_manager_to_ai_generator(self, rag_system):
         """
@@ -79,8 +82,8 @@ class TestRAGSystemQuery:
         rag_system.query("Query text")
 
         call_args = rag_system._mock_ai.generate_response.call_args
-        assert 'tool_manager' in call_args.kwargs
-        assert call_args.kwargs['tool_manager'] == rag_system.tool_manager
+        assert "tool_manager" in call_args.kwargs
+        assert call_args.kwargs["tool_manager"] == rag_system.tool_manager
 
     def test_query_wraps_user_question_in_prompt(self, rag_system):
         """
@@ -91,7 +94,7 @@ class TestRAGSystemQuery:
         rag_system.query("What is machine learning?")
 
         call_args = rag_system._mock_ai.generate_response.call_args
-        query_param = call_args.kwargs['query']
+        query_param = call_args.kwargs["query"]
         assert "Answer this question about course materials" in query_param
         assert "What is machine learning?" in query_param
 
@@ -105,7 +108,7 @@ class TestRAGSystemQuery:
         rag_system.query("Question without session")
 
         call_args = rag_system._mock_ai.generate_response.call_args
-        assert call_args.kwargs.get('conversation_history') is None
+        assert call_args.kwargs.get("conversation_history") is None
 
     def test_query_without_session_does_not_fetch_history(self, rag_system):
         """
@@ -134,11 +137,15 @@ class TestRAGSystemQuery:
         When: Processing query
         Then: Fetches history from SessionManager
         """
-        rag_system._mock_session.get_conversation_history.return_value = "Previous conversation"
+        rag_system._mock_session.get_conversation_history.return_value = (
+            "Previous conversation"
+        )
 
         rag_system.query("Follow-up", session_id="session_123")
 
-        rag_system._mock_session.get_conversation_history.assert_called_once_with("session_123")
+        rag_system._mock_session.get_conversation_history.assert_called_once_with(
+            "session_123"
+        )
 
     def test_query_with_session_passes_history_to_ai(self, rag_system):
         """
@@ -146,12 +153,14 @@ class TestRAGSystemQuery:
         When: query() is called with session_id
         Then: History is passed to AIGenerator
         """
-        rag_system._mock_session.get_conversation_history.return_value = "User: Hi\nAssistant: Hello"
+        rag_system._mock_session.get_conversation_history.return_value = (
+            "User: Hi\nAssistant: Hello"
+        )
 
         rag_system.query("Next question", session_id="session_123")
 
         call_args = rag_system._mock_ai.generate_response.call_args
-        assert call_args.kwargs['conversation_history'] == "User: Hi\nAssistant: Hello"
+        assert call_args.kwargs["conversation_history"] == "User: Hi\nAssistant: Hello"
 
     def test_query_with_session_adds_exchange_after_response(self, rag_system):
         """
@@ -229,7 +238,7 @@ class TestRAGSystemQuery:
         """
         rag_system._mock_session.get_conversation_history.side_effect = [
             None,  # First query - no history
-            "User: Q1\nAssistant: A1"  # Second query - has history
+            "User: Q1\nAssistant: A1",  # Second query - has history
         ]
         rag_system._mock_ai.generate_response.side_effect = ["A1", "A2"]
 
@@ -237,7 +246,9 @@ class TestRAGSystemQuery:
         rag_system.query("Q2", session_id="session_x")
 
         second_call_args = rag_system._mock_ai.generate_response.call_args_list[1]
-        assert second_call_args.kwargs['conversation_history'] == "User: Q1\nAssistant: A1"
+        assert (
+            second_call_args.kwargs["conversation_history"] == "User: Q1\nAssistant: A1"
+        )
 
 
 class TestRAGSystemSourceIntegration:
@@ -246,17 +257,19 @@ class TestRAGSystemSourceIntegration:
     @pytest.fixture
     def rag_with_real_tool_manager(self, mock_config):
         """RAGSystem with real ToolManager but mocked external dependencies"""
-        with patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.VectorStore') as mock_vs_class, \
-             patch('rag_system.AIGenerator') as mock_ai_class, \
-             patch('rag_system.SessionManager'):
+        with (
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.VectorStore") as mock_vs_class,
+            patch("rag_system.AIGenerator") as mock_ai_class,
+            patch("rag_system.SessionManager"),
+        ):
 
             # VectorStore mock that returns proper SearchResults
             mock_vector_store = Mock()
             mock_vector_store.search.return_value = SearchResults(
                 documents=["Content about topic"],
                 metadata=[{"course_title": "Test Course", "lesson_number": 1}],
-                distances=[0.1]
+                distances=[0.1],
             )
             mock_vector_store.get_lesson_link.return_value = "https://test.com/lesson1"
             mock_vector_store._resolve_course_name.return_value = "Test Course"
@@ -272,7 +285,9 @@ class TestRAGSystemSourceIntegration:
             system._mock_vs = mock_vector_store
             return system
 
-    def test_search_tool_produces_sources_retrieved_by_query(self, rag_with_real_tool_manager):
+    def test_search_tool_produces_sources_retrieved_by_query(
+        self, rag_with_real_tool_manager
+    ):
         """
         Given: Search tool execution produces sources
         When: Sources are retrieved after query
@@ -311,10 +326,12 @@ class TestRAGSystemToolRegistration:
     @pytest.fixture
     def rag_system(self, mock_config):
         """RAGSystem for testing tool registration"""
-        with patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.VectorStore') as mock_vs_class, \
-             patch('rag_system.AIGenerator'), \
-             patch('rag_system.SessionManager'):
+        with (
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.VectorStore") as mock_vs_class,
+            patch("rag_system.AIGenerator"),
+            patch("rag_system.SessionManager"),
+        ):
 
             mock_vector_store = Mock()
             mock_vector_store.search.return_value = SearchResults(
@@ -358,10 +375,12 @@ class TestRAGSystemErrorHandling:
     @pytest.fixture
     def rag_system(self, mock_config):
         """RAGSystem for testing error scenarios"""
-        with patch('rag_system.DocumentProcessor'), \
-             patch('rag_system.VectorStore') as mock_vs_class, \
-             patch('rag_system.AIGenerator') as mock_ai_class, \
-             patch('rag_system.SessionManager') as mock_sm_class:
+        with (
+            patch("rag_system.DocumentProcessor"),
+            patch("rag_system.VectorStore") as mock_vs_class,
+            patch("rag_system.AIGenerator") as mock_ai_class,
+            patch("rag_system.SessionManager") as mock_sm_class,
+        ):
 
             mock_vector_store = Mock()
             mock_ai_generator = Mock()

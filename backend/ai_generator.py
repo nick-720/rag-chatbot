@@ -1,9 +1,10 @@
 import anthropic
 from typing import List, Optional, Dict, Any
 
+
 class AIGenerator:
     """Handles interactions with Anthropic's Claude API for generating responses"""
-    
+
     # Static system prompt to avoid rebuilding on each call
     SYSTEM_PROMPT = """ You are an AI assistant specialized in course materials and educational content with access to comprehensive search tools for course information.
 
@@ -38,23 +39,22 @@ All responses must be:
 4. **Example-supported** - Include relevant examples when they aid understanding
 Provide only the direct answer to what was asked.
 """
-    
+
     def __init__(self, api_key: str, model: str):
         self.client = anthropic.Anthropic(api_key=api_key)
         self.model = model
-        
+
         # Pre-build base API parameters
-        self.base_params = {
-            "model": self.model,
-            "temperature": 0,
-            "max_tokens": 800
-        }
-    
-    def generate_response(self, query: str,
-                         conversation_history: Optional[str] = None,
-                         tools: Optional[List] = None,
-                         tool_manager=None,
-                         max_rounds: int = 2) -> str:
+        self.base_params = {"model": self.model, "temperature": 0, "max_tokens": 800}
+
+    def generate_response(
+        self,
+        query: str,
+        conversation_history: Optional[str] = None,
+        tools: Optional[List] = None,
+        tool_manager=None,
+        max_rounds: int = 2,
+    ) -> str:
         """
         Generate AI response with optional tool usage and conversation context.
         Supports sequential tool calling up to max_rounds.
@@ -81,7 +81,7 @@ Provide only the direct answer to what was asked.
         api_params = {
             **self.base_params,
             "messages": [{"role": "user", "content": query}],
-            "system": system_content
+            "system": system_content,
         }
 
         # Add tools if available
@@ -101,15 +101,22 @@ Provide only the direct answer to what was asked.
                 tools=tools,
                 tool_manager=tool_manager,
                 current_round=1,
-                max_rounds=max_rounds
+                max_rounds=max_rounds,
             )
 
         # Return direct response
         return response.content[0].text
-    
-    def _process_tool_chain(self, response, messages: List[Dict[str, Any]],
-                            system_content: str, tools: List, tool_manager,
-                            current_round: int, max_rounds: int) -> str:
+
+    def _process_tool_chain(
+        self,
+        response,
+        messages: List[Dict[str, Any]],
+        system_content: str,
+        tools: List,
+        tool_manager,
+        current_round: int,
+        max_rounds: int,
+    ) -> str:
         """
         Recursively process tool calls, allowing up to max_rounds of tool execution.
 
@@ -133,15 +140,16 @@ Provide only the direct answer to what was asked.
         for content_block in response.content:
             if content_block.type == "tool_use":
                 tool_result = tool_manager.execute_tool(
-                    content_block.name,
-                    **content_block.input
+                    content_block.name, **content_block.input
                 )
 
-                tool_results.append({
-                    "type": "tool_result",
-                    "tool_use_id": content_block.id,
-                    "content": tool_result
-                })
+                tool_results.append(
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": content_block.id,
+                        "content": tool_result,
+                    }
+                )
 
         # Append tool results to messages
         if tool_results:
@@ -154,7 +162,7 @@ Provide only the direct answer to what was asked.
         next_params = {
             **self.base_params,
             "messages": messages,
-            "system": system_content
+            "system": system_content,
         }
         if include_tools:
             next_params["tools"] = tools
@@ -164,9 +172,11 @@ Provide only the direct answer to what was asked.
         next_response = self.client.messages.create(**next_params)
 
         # Recursive case: More tool calls requested and rounds remaining
-        if (next_response.stop_reason == "tool_use"
+        if (
+            next_response.stop_reason == "tool_use"
             and include_tools
-            and current_round < max_rounds):
+            and current_round < max_rounds
+        ):
             return self._process_tool_chain(
                 response=next_response,
                 messages=messages,
@@ -174,7 +184,7 @@ Provide only the direct answer to what was asked.
                 tools=tools,
                 tool_manager=tool_manager,
                 current_round=current_round + 1,
-                max_rounds=max_rounds
+                max_rounds=max_rounds,
             )
 
         # Base case: Return final text response
