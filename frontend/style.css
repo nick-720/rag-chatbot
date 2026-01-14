@@ -38,9 +38,9 @@
 [data-theme="light"] {
     --primary-color: #1d4ed8;
     --primary-hover: #1e40af;
-    --background: #f8fafc;
-    --surface: #ffffff;
-    --surface-hover: #f1f5f9;
+    --background: #e5e7eb;
+    --surface: #f3f4f6;
+    --surface-hover: #e5e7eb;
     --text-primary: #0f172a;
     --text-secondary: #475569;
     --border-color: #cbd5e1;
